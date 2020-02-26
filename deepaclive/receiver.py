@@ -7,6 +7,7 @@ from deepac.predict import filter_fasta
 from deepac.builtin_loading import BuiltinLoader
 from deepaclive.utils import filter_paired_fasta
 from tensorflow.compat.v1.keras.models import load_model
+import time
 
 
 def get_builtin(deepac_command):
@@ -52,6 +53,7 @@ def get_builtin(deepac_command):
 
 class Receiver:
     def __init__(self, deepac_command, model, read_length, input_dir, output_dir, n_cpus=8, n_gpus=0, threshold=0.5):
+        print("Setting up the receiver...")
         self.deepac = deepac_command
         if self.deepac is not None:
             # load a built-in model
@@ -78,6 +80,7 @@ class Receiver:
 
         self.input_dir = input_dir
         self.output_dir = output_dir
+        print("Receiver ready.")
 
     def do_pred_bam(self, inpath_bam, outpath_npy):
         pre, ext = os.path.splitext(inpath_bam)
@@ -98,54 +101,78 @@ class Receiver:
                             threshold=self.threshold, print_potentials=True)
 
     def run(self, cycles, mode="bam"):
+        # TODO: refactor
+        # copy by value
+        cycles_todo = cycles[:]
         if mode == "bam":
-            for c in cycles:
-                print("Received cycle {}.".format(c))
+            while len(cycles_todo) > 0:
+                c = cycles_todo[0]
                 single = c <= self.read_length
-
-                outpath_fasta = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
-
                 inpath_bam_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped_1.bam".format(c))
-                inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped_1.fasta".format(c))
-                outpath_npy_1 = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
-                self.do_pred_bam(inpath_bam_1, outpath_npy_1)
+                inpath_bam_2 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped_2.bam".format(c))
 
-                if single:
-                    self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                if (single and os.path.exists(inpath_bam_1)) \
+                    or (os.path.exists(inpath_bam_1) and os.path.exists(inpath_bam_2)):
+                    print("Received cycle {}.".format(c))
+
+                    outpath_fasta = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
+                    inpath_fasta_1 = os.path.join(self.input_dir,
+                                                  "hilive_out_cycle{}_undetermined_unmapped_1.fasta".format(c))
+                    outpath_npy_1 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
+                    self.do_pred_bam(inpath_bam_1, outpath_npy_1)
+
+                    if single:
+                        self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                    else:
+                        inpath_fasta_2 = os.path.join(self.input_dir,
+                                                      "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
+                        outpath_npy_2 = os.path.join(self.output_dir,
+                                                     "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
+                        self.do_pred_bam(inpath_bam_2, outpath_npy_2)
+                        self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
+                                                    outpath_fasta)
+                    cycles_todo.pop(0)
+                    if len(cycles_todo) > 0:
+                        print("Done. Receiver awaiting cycle {}.".format(cycles_todo[0]))
+                    else:
+                        print("All predictions done")
                 else:
-                    inpath_bam_2 = os.path.join(self.input_dir,
-                                                "hilive_out_cycle{}_undetermined_unmapped_2.bam".format(c))
-                    inpath_fasta_2 = os.path.join(self.input_dir,
-                                                  "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
-                    outpath_npy_2 = os.path.join(self.output_dir,
-                                                 "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
-                    self.do_pred_bam(inpath_bam_2, outpath_npy_2)
-                    self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1,outpath_npy_2,
-                                                outpath_fasta)
+                    time.sleep(1)
 
         elif mode == "fasta":
-            for c in cycles:
-                print("Received cycle {}.".format(c))
+            while len(cycles_todo) > 0:
+                c = cycles_todo[0]
                 single = c <= self.read_length
-                outpath_fasta = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
                 inpath_fasta_1 = os.path.join(self.input_dir,
                                               "hilive_out_cycle{}_undetermined_unmapped_1.fasta".format(c))
-                outpath_npy_1 = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
-                self.do_pred_fasta(inpath_fasta_1, outpath_npy_2)
+                inpath_fasta_2 = os.path.join(self.input_dir,
+                                              "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
+                if (single and os.path.exists(inpath_fasta_1)) \
+                        or (os.path.exists(inpath_fasta_1) and os.path.exists(inpath_fasta_2)):
+                    print("Received cycle {}.".format(c))
+                    outpath_fasta = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
+                    outpath_npy_1 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
+                    self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
 
-                if single:
-                    self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                    if single:
+                        self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                    else:
+                        outpath_npy_2 = os.path.join(self.output_dir,
+                                                     "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
+                        self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
+                        self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
+                                                    outpath_fasta)
+                    cycles_todo.pop(0)
+                    if len(cycles_todo) > 0:
+                        print("Done. Receiver awaiting cycle {}.".format(cycles_todo[0]))
+                    else:
+                        print("All predictions done.")
                 else:
-                    inpath_fasta_2 = os.path.join(self.input_dir,
-                                                  "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
-                    outpath_npy_2 = os.path.join(self.output_dir,
-                                                 "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
-                    self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
-                    self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1,outpath_npy_2,
-                                                outpath_fasta)
+                    time.sleep(1)
         else:
             raise ValueError("Unrecognized sender format: {}".format(mode))
 

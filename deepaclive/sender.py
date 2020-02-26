@@ -1,5 +1,6 @@
 import pysam
 import os
+import time
 
 
 # TODO: get ambiguous
@@ -47,6 +48,7 @@ def get_unmapped_bam(inpath, outpath, single=False):
 
 class Sender:
     def __init__(self, read_length, input_dir, output_dir):
+        print("Setting up the sender...")
         if not os.path.isdir(input_dir):
             os.mkdir(input_dir)
         if not os.path.isdir(output_dir):
@@ -54,22 +56,44 @@ class Sender:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.read_length = read_length
+        print("Sender ready.")
 
     def run(self, cycles, mode="bam"):
+        # TODO: refactor
         # TODO: send
+        # copy by value
+        cycles_todo = cycles[:]
         if mode == "bam":
-            for c in cycles:
-                print("Sending cycle {}.".format(c))
-                single = c <= self.read_length
+            while len(cycles_todo) > 0:
+                c = cycles_todo[0]
                 inpath = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined.bam".format(c))
-                outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped".format(c))
-                get_unmapped_bam(inpath, outpath, single)
+                if os.path.exists(inpath):
+                    print("Sending cycle {}.".format(c))
+                    single = c <= self.read_length
+                    outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped".format(c))
+                    get_unmapped_bam(inpath, outpath, single)
+                    cycles_todo.pop(0)
+                    if len(cycles_todo) > 0:
+                        print("Done. Sender awaiting cycle {}.".format(cycles_todo[0]))
+                    else:
+                        print("Sender done.")
+                else:
+                    time.sleep(1)
         elif mode == "fasta":
-            for c in cycles:
-                print("Sending cycle {}.".format(c))
-                single = c <= self.read_length
+            while len(cycles_todo) > 0:
+                c = cycles_todo[0]
                 inpath = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined.bam".format(c))
-                outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped".format(c))
-                get_unmapped_fasta(inpath, outpath, single)
+                if os.path.exists(inpath):
+                    print("Sending cycle {}.".format(c))
+                    single = c <= self.read_length
+                    outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped".format(c))
+                    get_unmapped_fasta(inpath, outpath, single)
+                    cycles_todo.pop(0)
+                    if len(cycles_todo) > 0:
+                        print("Done. Sender awaiting cycle {}.".format(cycles_todo[0]))
+                    else:
+                        print("Sender done.")
+                else:
+                    time.sleep(1)
         else:
             raise ValueError("Unrecognized sender format: {}".format(mode))

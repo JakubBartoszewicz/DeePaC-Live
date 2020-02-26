@@ -3,10 +3,10 @@ from deepaclive.receiver import Receiver
 from deepaclive.sender import Sender
 import argparse
 from deepaclive import __version__
+from multiprocessing import Process
 
 
 def main():
-    # TODO: asynch
     parse()
 
 
@@ -24,8 +24,12 @@ def run_receiver(args):
 
 
 def run_local(args):
-    run_sender(args)
-    run_receiver(args)
+    ps = Process(target=run_sender, args=(args,))
+    ps.start()
+    pr = Process(target=run_receiver, args=(args,))
+    pr.start()
+    ps.join()
+    pr.join()
 
 
 def add_base_parser(bparser):
