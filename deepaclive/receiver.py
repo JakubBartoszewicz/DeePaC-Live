@@ -1,4 +1,3 @@
-import pysam
 import os
 import fnmatch
 import importlib
@@ -6,6 +5,7 @@ from deepaclive.sender import get_unmapped_fasta
 from deepac.predict import predict_fasta
 from deepac.predict import filter_fasta
 from deepac.builtin_loading import BuiltinLoader
+from deepaclive.utils import filter_paired_fasta
 
 
 def get_builtin(deepac_command):
@@ -78,7 +78,7 @@ class Receiver:
     def do_pred_bam(self, inpath_bam, outpath_npy):
         pre, ext = os.path.splitext(inpath_bam)
         temp_fasta = "{}.fasta".format(pre)
-        get_unmapped_fasta(inpath=inpath_bam, outpath_fasta=temp_fasta, do_filter=False)
+        get_unmapped_fasta(inpath=inpath_bam, outpath=pre, do_filter=False)
         self.do_pred_fasta(temp_fasta, outpath_npy)
 
     def do_pred_fasta(self, inpath_fasta, outpath_npy):
@@ -88,27 +88,60 @@ class Receiver:
         filter_fasta(input_fasta=inpath_fasta, predictions=preds_npy, output=outpath_fasta,
                      threshold=self.threshold, print_potentials=True)
 
+    def do_filter_paired_fasta(self, inpath_fasta_1, inpath_fasta_2, preds_npy_1, preds_npy_2, outpath_fasta):
+        filter_paired_fasta(input_fasta_1=inpath_fasta_1, input_fasta_2=inpath_fasta_2, predictions_1=preds_npy_1,
+                            predictions_2=preds_npy_2, output=outpath_fasta,
+                            threshold=self.threshold, print_potentials=True)
+
     def run(self, cycles, mode="bam"):
-        #TODO: average mates
         if mode == "bam":
             for c in cycles:
                 print("Received cycle {}.".format(c))
-                inpath_bam = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped.bam".format(c))
-                inpath_fasta = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped.fasta".format(c))
-                outpath_npy = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped.npy".format(c))
+                single = c <= self.read_length
+
                 outpath_fasta = os.path.join(self.output_dir,
                                              "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
-                self.do_pred_bam(inpath_bam, outpath_npy)
-                self.do_filter_fasta(inpath_fasta, outpath_npy, outpath_fasta)
+
+                inpath_bam_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped_1.bam".format(c))
+                inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped_1.fasta".format(c))
+                outpath_npy_1 = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
+                self.do_pred_bam(inpath_bam_1, outpath_npy_1)
+
+                if single:
+                    self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                else:
+                    inpath_bam_2 = os.path.join(self.input_dir,
+                                                "hilive_out_cycle{}_undetermined_unmapped_2.bam".format(c))
+                    inpath_fasta_2 = os.path.join(self.input_dir,
+                                                  "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
+                    outpath_npy_2 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
+                    self.do_pred_bam(inpath_bam_2, outpath_npy_2)
+                    self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1,outpath_npy_2,
+                                                outpath_fasta)
+
         elif mode == "fasta":
             for c in cycles:
                 print("Received cycle {}.".format(c))
-                inpath_fasta = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_unmapped.fasta".format(c))
-                outpath_npy = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_unmapped.npy".format(c))
+                single = c <= self.read_length
                 outpath_fasta = os.path.join(self.output_dir,
                                              "hilive_out_cycle{}_undetermined_filtered.fasta".format(c))
-                self.do_pred_fasta(inpath_fasta, outpath_npy)
-                self.do_filter_fasta(inpath_fasta, outpath_npy, outpath_fasta)
+                inpath_fasta_1 = os.path.join(self.input_dir,
+                                              "hilive_out_cycle{}_undetermined_unmapped_1.fasta".format(c))
+                outpath_npy_1 = os.path.join(self.output_dir,
+                                             "hilive_out_cycle{}_undetermined_unmapped_1.npy".format(c))
+                self.do_pred_fasta(inpath_fasta_1, outpath_npy_2)
+
+                if single:
+                    self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, outpath_fasta)
+                else:
+                    inpath_fasta_2 = os.path.join(self.input_dir,
+                                                  "hilive_out_cycle{}_undetermined_unmapped_2.fasta".format(c))
+                    outpath_npy_2 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_undetermined_unmapped_2.npy".format(c))
+                    self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
+                    self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1,outpath_npy_2,
+                                                outpath_fasta)
         else:
             raise ValueError("Unrecognized sender format: {}".format(mode))
 
