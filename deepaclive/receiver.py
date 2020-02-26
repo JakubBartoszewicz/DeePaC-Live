@@ -6,6 +6,7 @@ from deepac.predict import predict_fasta
 from deepac.predict import filter_fasta
 from deepac.builtin_loading import BuiltinLoader
 from deepaclive.utils import filter_paired_fasta
+from tensorflow.compat.v1.keras.models import load_model
 
 
 def get_builtin(deepac_command):
@@ -52,7 +53,23 @@ def get_builtin(deepac_command):
 class Receiver:
     def __init__(self, deepac_command, model, read_length, input_dir, output_dir, n_cpus=8, n_gpus=0, threshold=0.5):
         self.deepac = deepac_command
-        self.builtin_configs, self.builtin_weights = get_builtin(self.deepac)
+        if self.deepac is not None:
+            # load a built-in model
+            self.builtin_configs, self.builtin_weights = get_builtin(self.deepac)
+            self.bloader = BuiltinLoader(self.builtin_configs, self.builtin_weights)
+
+            if model == "rapid":
+                self.model = self.bloader.load_rapid_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
+            elif model == "sensitive":
+                self.model = self.bloader.load_sensitive_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
+            else:
+                raise ValueError("Unrecognized model type: {}".format(model))
+        else:
+            # load custom model
+            self.model = load_model(model)
+
+        self.threshold = threshold
+        self.read_length = read_length
 
         if not os.path.isdir(input_dir):
             os.mkdir(input_dir)
@@ -61,19 +78,6 @@ class Receiver:
 
         self.input_dir = input_dir
         self.output_dir = output_dir
-
-        self.bloader = BuiltinLoader(self.builtin_configs, self.builtin_weights)
-
-        if model == "rapid":
-            self.model = self.bloader.load_rapid_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
-        elif model == "sensitive":
-            self.model = self.bloader.load_sensitive_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
-        else:
-            #TODO: custom models
-            raise ValueError("Unrecognized model type: {}".format(model))
-
-        self.threshold = threshold
-        self.read_length = read_length
 
     def do_pred_bam(self, inpath_bam, outpath_npy):
         pre, ext = os.path.splitext(inpath_bam)

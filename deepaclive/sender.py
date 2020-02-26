@@ -4,7 +4,6 @@ import os
 
 # TODO: get ambiguous
 def get_unmapped_fasta(inpath, outpath, single=False, do_filter=True):
-    # samtools view -bf 12 -o outpath inpath
     # set output in both pysam wrapper and samtools argument list
     if do_filter:
         outpath_fasta_1 = outpath + "_1.fasta"
@@ -33,7 +32,6 @@ def get_unmapped_bam(inpath, outpath, single=False):
     # create the file upfront, so pysam can open it
     with open(outpath_bam_1, 'w') as fp:
         pass
-    # samtools view -bf 12 -o outpath inpath
     # set output in both pysam wrapper and samtools argument list
     if single:
         pysam.view("-bf 4", "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)

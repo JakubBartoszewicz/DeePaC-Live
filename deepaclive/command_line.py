@@ -1,3 +1,4 @@
+import sklearn # to load libgomp early to solve problems with static TLS on some systems like bioconda mulled-tests
 from deepaclive.receiver import Receiver
 from deepaclive.sender import Sender
 
