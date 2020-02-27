@@ -1,9 +1,7 @@
 import os
 import fnmatch
 import importlib
-from deepaclive.sender import get_unmapped_fasta
 from deepac.predict import predict_fasta
-from deepac.predict import filter_fasta
 from deepac.builtin_loading import BuiltinLoader
 from deepaclive.utils import filter_paired_fasta
 from tensorflow.compat.v1.keras.models import load_model
@@ -73,7 +71,7 @@ class Receiver:
 
         self.threshold = threshold
         self.read_length = read_length
-
+        self.cores = n_cpus
         if not os.path.isdir(input_dir):
             os.mkdir(input_dir)
         if not os.path.isdir(output_dir):
@@ -93,7 +91,7 @@ class Receiver:
         self.do_pred_fasta(temp_fasta, outpath_npy)
 
     def do_pred_fasta(self, inpath_fasta, outpath_npy):
-        predict_fasta(model=self.model, input_fasta=inpath_fasta, output=outpath_npy)
+        predict_fasta(model=self.model, input_fasta=inpath_fasta, output=outpath_npy, token_cores=self.cores)
 
     def do_filter_fasta(self, inpath_fasta, preds_npy, out_fasta_pos, out_fasta_neg):
         filter_paired_fasta(input_fasta_1=inpath_fasta, predictions_1=preds_npy, output_pos=out_fasta_pos,
