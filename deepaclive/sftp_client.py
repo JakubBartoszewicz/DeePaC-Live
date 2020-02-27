@@ -74,10 +74,10 @@ def sftp_push(user_hostname, files, key=None, port=22):
         t.close()
 
     except Exception as e:
-        print("*** Caught exception: %s: %s" % (e.__class__, e))
-        traceback.print_exc()
+        print(str(e))
         try:
             t.close()
-        except:
+        except Exception as et:
+            print(str(et))
             pass
         sys.exit(1)
