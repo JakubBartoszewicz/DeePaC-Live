@@ -12,15 +12,17 @@ def main():
 
 def run_sender(args):
     sender = Sender(read_length=args.read_length, input_dir=args.in_dir, output_dir=args.send_out_dir, do_all=args.all)
+    barcodes = args.barcodes.split(',')
     cycles = [int(c) for c in args.cycle_list.split(',')]
-    sender.run(cycles, mode=args.format)
+    sender.run(cycles=cycles, barcodes=barcodes, mode=args.format)
 
 
 def run_receiver(args):
     receiver = Receiver(args.command, model=args.model, read_length=args.read_length, input_dir=args.rec_in_dir,
                         output_dir=args.rec_out_dir)
     cycles = [int(c) for c in args.cycle_list.split(',')]
-    receiver.run(cycles, mode=args.format, discard_neg=args.discard_neg)
+    barcodes = args.barcodes.split(',')
+    receiver.run(cycles=cycles, barcodes=barcodes, mode=args.format, discard_neg=args.discard_neg)
 
 
 def run_local(args):
@@ -39,6 +41,9 @@ def add_base_parser(bparser):
                          help='Comma-separated list of sequencing cycles to analyze.')
     bparser.add_argument('-f', '--format', default="bam",
                          help='Format of temp files.')
+    bparser.add_argument('-B', '--barcodes', default="undetermined",
+                         help='Comma-separated list of barcodes of samples to analyze.')
+
     return bparser
 
 

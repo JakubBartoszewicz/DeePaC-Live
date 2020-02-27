@@ -105,82 +105,86 @@ class Receiver:
                             input_fasta_2=inpath_fasta_2, predictions_2=preds_npy_2, output_neg=out_fasta_neg,
                             threshold=self.threshold, print_potentials=True)
 
-    def run(self, cycles, mode="bam", discard_neg=False):
-        # TODO: barcodes
+    def run(self, cycles, barcodes, mode="bam", discard_neg=False):
         # copy by value
         cycles_todo = cycles[:]
         while len(cycles_todo) > 0:
             c = cycles_todo[0]
             single = c <= self.read_length
-            inpath_bam_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_deepac_1.bam".format(c))
-            inpath_bam_2 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_deepac_2.bam".format(c))
+            barcodes_todo = barcodes[:]
+            while len(barcodes_todo) > 0:
+                barcode = barcodes_todo[0]
+                inpath_bam_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_1.bam".format(c, barcode))
+                inpath_bam_2 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_2.bam".format(c, barcode))
 
-            if (single and os.path.exists(inpath_bam_1)) \
-                    or (os.path.exists(inpath_bam_1) and os.path.exists(inpath_bam_2)):
-                print("Received cycle {}.".format(c))
+                if (single and os.path.exists(inpath_bam_1)) \
+                        or (os.path.exists(inpath_bam_1) and os.path.exists(inpath_bam_2)):
+                    print("Received cycle {}, barcode {}.".format(c, barcode))
 
+                    out_fasta_pos = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_{}_predicted_pos.fasta".format(c, barcode))
+                    if discard_neg:
+                        out_fasta_neg = None
+                    else:
+                        out_fasta_neg = os.path.join(self.output_dir,
+                                                     "hilive_out_cycle{}_{}_predicted_neg.fasta".format(c, barcode))
+                    inpath_fasta_1 = os.path.join(self.input_dir,
+                                                  "hilive_out_cycle{}_{}_deepac_1.fasta".format(c, barcode))
+                    outpath_npy_1 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_{}_deepac_1.npy".format(c, barcode))
+                    if mode == "bam":
+                        self.do_pred_bam(inpath_bam_1, outpath_npy_1)
+                    elif mode == "fasta":
+                        self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
+                    else:
+                        raise ValueError("Unrecognized sender format: {}".format(mode))
+
+                    if single:
+                        self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
+                    else:
+                        inpath_fasta_2 = os.path.join(self.input_dir,
+                                                      "hilive_out_cycle{}_{}_deepac_2.fasta".format(c, barcode))
+                        outpath_npy_2 = os.path.join(self.output_dir,
+                                                     "hilive_out_cycle{}_{}_deepac_2.npy".format(c, barcode))
+                        if mode == "bam":
+                            self.do_pred_bam(inpath_bam_2, outpath_npy_2)
+                        elif mode == "fasta":
+                            self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
+                        else:
+                            raise ValueError("Unrecognized sender format: {}".format(mode))
+
+                        self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
+                                                    out_fasta_pos, out_fasta_neg)
+                    barcodes_todo.pop(0)
+                else:
+                    time.sleep(1)
+            cycles_todo.pop(0)
+            if len(cycles_todo) > 0:
+                print("Done. Receiver awaiting cycle {}.".format(cycles_todo[0]))
+            else:
+                print("All predictions done")
+
+    def refilter(self, cycles, barcodes, discard_neg=False):
+        for c in cycles:
+            for barcode in barcodes:
+                inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_1.fasta".format(c, barcode))
+                outpath_npy_1 = os.path.join(self.output_dir, "hilive_out_cycle{}_{}_deepac_1.npy".format(c, barcode))
                 out_fasta_pos = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
+                                             "hilive_out_cycle{}_{}_predicted_pos.fasta".format(c, barcode))
                 if discard_neg:
                     out_fasta_neg = None
                 else:
                     out_fasta_neg = os.path.join(self.output_dir,
-                                                 "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
-                inpath_fasta_1 = os.path.join(self.input_dir,
-                                              "hilive_out_cycle{}_undetermined_deepac_1.fasta".format(c))
-                outpath_npy_1 = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_deepac_1.npy".format(c))
-                if mode == "bam":
-                    self.do_pred_bam(inpath_bam_1, outpath_npy_1)
-                elif mode == "fasta":
-                    self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
-                else:
-                    raise ValueError("Unrecognized sender format: {}".format(mode))
+                                                 "hilive_out_cycle{}_{}_predicted_pos.fasta".format(c, barcode))
 
+                single = c <= self.read_length
                 if single:
                     self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
                 else:
                     inpath_fasta_2 = os.path.join(self.input_dir,
-                                                  "hilive_out_cycle{}_undetermined_deepac_2.fasta".format(c))
+                                                  "hilive_out_cycle{}_{}_deepac_2.fasta".format(c, barcode))
                     outpath_npy_2 = os.path.join(self.output_dir,
-                                                 "hilive_out_cycle{}_undetermined_deepac_2.npy".format(c))
-                    if mode == "bam":
-                        self.do_pred_bam(inpath_bam_2, outpath_npy_2)
-                    elif mode == "fasta":
-                        self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
-                    else:
-                        raise ValueError("Unrecognized sender format: {}".format(mode))
+                                                 "hilive_out_cycle{}_{}_deepac_2.npy".format(c, barcode))
 
                     self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
                                                 out_fasta_pos, out_fasta_neg)
-                cycles_todo.pop(0)
-                if len(cycles_todo) > 0:
-                    print("Done. Receiver awaiting cycle {}.".format(cycles_todo[0]))
-                else:
-                    print("All predictions done")
-            else:
-                time.sleep(1)
-
-    def refilter(self, cycles, discard_neg=False):
-        for c in cycles:
-            inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_deepac_1.fasta".format(c))
-            outpath_npy_1 = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_deepac_1.npy".format(c))
-            out_fasta_pos = os.path.join(self.output_dir,
-                                         "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
-            if discard_neg:
-                out_fasta_neg = None
-            else:
-                out_fasta_neg = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
-
-            single = c <= self.read_length
-            if single:
-                self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
-            else:
-                inpath_fasta_2 = os.path.join(self.input_dir,
-                                              "hilive_out_cycle{}_undetermined_deepac_2.fasta".format(c))
-                outpath_npy_2 = os.path.join(self.output_dir,
-                                             "hilive_out_cycle{}_undetermined_deepac_2.npy".format(c))
-
-                self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
-                                            out_fasta_pos, out_fasta_neg)

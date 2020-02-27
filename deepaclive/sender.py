@@ -72,27 +72,32 @@ class Sender:
         self.do_filter = not do_all
         print("Sender ready.")
 
-    def run(self, cycles, mode="bam"):
+    def run(self, cycles, barcodes, mode="bam"):
         # TODO: send
         # copy by value
         cycles_todo = cycles[:]
         while len(cycles_todo) > 0:
             c = cycles_todo[0]
-            inpath = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined.bam".format(c))
-            if os.path.exists(inpath):
-                print("Sending cycle {}.".format(c))
-                single = c <= self.read_length
-                outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_deepac".format(c))
-                if mode == "bam":
-                    get_unmapped_bam(inpath, outpath, single, do_filter=self.do_filter)
-                elif mode == "fasta":
-                    get_unmapped_fasta(inpath, outpath, single, do_filter=self.do_filter)
+            single = c <= self.read_length
+            barcodes_todo = barcodes[:]
+            while len(barcodes_todo) > 0:
+                barcode = barcodes_todo[0]
+                inpath = os.path.join(self.input_dir, "hilive_out_cycle{}_{}.bam".format(c, barcode))
+                if os.path.exists(inpath):
+                    print("Sending cycle {}, barcode {}.".format(c, barcode))
+                    outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_{}_deepac".format(c, barcode))
+                    if mode == "bam":
+                        get_unmapped_bam(inpath, outpath, single, do_filter=self.do_filter)
+                    elif mode == "fasta":
+                        get_unmapped_fasta(inpath, outpath, single, do_filter=self.do_filter)
+                    else:
+                        raise ValueError("Unrecognized sender format: {}".format(mode))
+                    barcodes_todo.pop(0)
                 else:
-                    raise ValueError("Unrecognized sender format: {}".format(mode))
-                cycles_todo.pop(0)
-                if len(cycles_todo) > 0:
-                    print("Done. Sender awaiting cycle {}.".format(cycles_todo[0]))
-                else:
-                    print("Sender done.")
+                    time.sleep(1)
+            cycles_todo.pop(0)
+            if len(cycles_todo) > 0:
+                print("Done. Sender awaiting cycle {}.".format(cycles_todo[0]))
             else:
-                time.sleep(1)
+                print("Sender done.")
+
