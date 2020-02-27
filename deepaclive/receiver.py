@@ -163,8 +163,8 @@ class Receiver:
 
     def refilter(self, cycles, discard_neg=False):
         for c in cycles:
-            inpath_fasta = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_deepac.fasta".format(c))
-            outpath_npy = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_deepac.npy".format(c))
+            inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_undetermined_deepac_1.fasta".format(c))
+            outpath_npy_1 = os.path.join(self.output_dir, "hilive_out_cycle{}_undetermined_deepac_1.npy".format(c))
             out_fasta_pos = os.path.join(self.output_dir,
                                          "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
             if discard_neg:
@@ -172,4 +172,15 @@ class Receiver:
             else:
                 out_fasta_neg = os.path.join(self.output_dir,
                                              "hilive_out_cycle{}_undetermined_predicted_pos.fasta".format(c))
-            self.do_filter_fasta(inpath_fasta, outpath_npy, out_fasta_pos, out_fasta_neg)
+
+            single = c <= self.read_length
+            if single:
+                self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
+            else:
+                inpath_fasta_2 = os.path.join(self.input_dir,
+                                              "hilive_out_cycle{}_undetermined_deepac_2.fasta".format(c))
+                outpath_npy_2 = os.path.join(self.output_dir,
+                                             "hilive_out_cycle{}_undetermined_deepac_2.npy".format(c))
+
+                self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
+                                            out_fasta_pos, out_fasta_neg)
