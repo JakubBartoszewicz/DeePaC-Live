@@ -84,26 +84,30 @@ class Receiver:
         print("Receiver ready.")
 
     def do_pred_bam(self, inpath_bam, outpath_npy):
-        pre, ext = os.path.splitext(inpath_bam)
-        temp_fasta = "{}.fasta".format(pre)
-        # create the file upfront, so pysam can open it
-        with open(temp_fasta, 'w') as fp:
-            pass
-        pysam.fasta(inpath_bam, save_stdout=temp_fasta)
-        self.do_pred_fasta(temp_fasta, outpath_npy)
+        if os.stat(inpath_bam).st_size != 0:
+            pre, ext = os.path.splitext(inpath_bam)
+            temp_fasta = "{}.fasta".format(pre)
+            # create the file upfront, so pysam can open it
+            with open(temp_fasta, 'w') as fp:
+                pass
+            pysam.fasta(inpath_bam, save_stdout=temp_fasta)
+            self.do_pred_fasta(temp_fasta, outpath_npy)
 
     def do_pred_fasta(self, inpath_fasta, outpath_npy):
-        predict_fasta(model=self.model, input_fasta=inpath_fasta, output=outpath_npy, token_cores=self.cores)
+        if os.stat(inpath_fasta).st_size != 0:
+            predict_fasta(model=self.model, input_fasta=inpath_fasta, output=outpath_npy, token_cores=self.cores)
 
     def do_filter_fasta(self, inpath_fasta, preds_npy, out_fasta_pos, out_fasta_neg):
-        filter_paired_fasta(input_fasta_1=inpath_fasta, predictions_1=preds_npy, output_pos=out_fasta_pos,
-                            output_neg=out_fasta_neg, threshold=self.threshold, print_potentials=True)
+        if os.path.exists(inpath_fasta) and os.stat(inpath_fasta).st_size != 0:
+            filter_paired_fasta(input_fasta_1=inpath_fasta, predictions_1=preds_npy, output_pos=out_fasta_pos,
+                                output_neg=out_fasta_neg, threshold=self.threshold, print_potentials=True)
 
     def do_filter_paired_fasta(self, inpath_fasta_1, inpath_fasta_2, preds_npy_1, preds_npy_2, out_fasta_pos,
                                out_fasta_neg=None):
-        filter_paired_fasta(input_fasta_1=inpath_fasta_1, predictions_1=preds_npy_1, output_pos=out_fasta_pos,
-                            input_fasta_2=inpath_fasta_2, predictions_2=preds_npy_2, output_neg=out_fasta_neg,
-                            threshold=self.threshold, print_potentials=True)
+        if os.path.exists(inpath_fasta_1) and os.stat(inpath_fasta_1).st_size != 0:
+            filter_paired_fasta(input_fasta_1=inpath_fasta_1, predictions_1=preds_npy_1, output_pos=out_fasta_pos,
+                                input_fasta_2=inpath_fasta_2, predictions_2=preds_npy_2, output_neg=out_fasta_neg,
+                                threshold=self.threshold, print_potentials=True)
 
     def run(self, cycles, barcodes, mode="bam", discard_neg=False):
         # copy by value
