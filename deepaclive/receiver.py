@@ -53,6 +53,14 @@ def get_builtin(deepac_command):
 class Receiver:
     def __init__(self, deepac_command, model, read_length, input_dir, output_dir, n_cpus=8, n_gpus=0, threshold=0.5):
         print("Setting up the receiver...")
+
+        self.input_dir = os.path.abspath(os.path.realpath(os.path.expanduser(input_dir)))
+        self.output_dir = os.path.abspath(os.path.realpath(os.path.expanduser(output_dir)))
+        if not os.path.isdir(self.input_dir):
+            os.mkdir(self.input_dir)
+        if not os.path.isdir(self.output_dir):
+            os.mkdir(self.output_dir)
+
         self.deepac = deepac_command
         if self.deepac is not None:
             # load a built-in model
@@ -72,13 +80,7 @@ class Receiver:
         self.threshold = threshold
         self.read_length = read_length
         self.cores = n_cpus
-        if not os.path.isdir(input_dir):
-            os.mkdir(input_dir)
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
 
-        self.input_dir = input_dir
-        self.output_dir = output_dir
         print("Receiver ready.")
 
     def do_pred_bam(self, inpath_bam, outpath_npy):

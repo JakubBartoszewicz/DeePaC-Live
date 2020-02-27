@@ -12,6 +12,7 @@ def main():
 
 def run_sender(args):
     sender = Sender(read_length=args.read_length, input_dir=args.in_dir, output_dir=args.send_out_dir,
+                    user_hostname=args.remote, key=args.key, port=args.port,
                     n_cpus=args.n_cpus_send, do_all=args.all)
     barcodes = args.barcodes.split(',')
     cycles = [int(c) for c in args.cycle_list.split(',')]
@@ -28,12 +29,12 @@ def run_receiver(args):
 
 
 def run_local(args):
-    ps = Process(target=run_sender, args=(args,))
-    ps.start()
     pr = Process(target=run_receiver, args=(args,))
     pr.start()
-    ps.join()
+    ps = Process(target=run_sender, args=(args,))
+    ps.start()
     pr.join()
+    ps.join()
 
 
 def add_base_parser(bparser):
@@ -77,8 +78,9 @@ def add_sender_parser(sparser):
     sparser.add_argument('-n', '--n-cpus-send', dest='n_cpus_send', type=int, default=8,
                          help='Number of cores used by the sender.')
     sparser.add_argument('-a', '--all', action='store_true', help="Analyze all reads (default: unmapped only).")
-    sparser.add_argument('-r', '--remote', help='Remote output directory (with username).')
+    sparser.add_argument('-r', '--remote', help='Remote host and path (with username).')
     sparser.add_argument('-k', '--key', help='SSH key.')
+    sparser.add_argument('-p', '--port', default=22, help='Port for SFTP connection.')
     return sparser
 
 
