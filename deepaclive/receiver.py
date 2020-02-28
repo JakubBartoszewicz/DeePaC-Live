@@ -7,6 +7,7 @@ from deepaclive.utils import filter_paired_fasta
 from tensorflow.compat.v1.keras.models import load_model
 import time
 import pysam
+import numpy as np
 
 
 def get_builtin(deepac_command):
@@ -90,12 +91,16 @@ class Receiver:
             # create the file upfront, so pysam can open it
             with open(temp_fasta, 'w') as fp:
                 pass
-            pysam.fasta(inpath_bam, save_stdout=temp_fasta)
+            pysam.fasta("-@", str(self.cores - 1), inpath_bam, save_stdout=temp_fasta)
             self.do_pred_fasta(temp_fasta, outpath_npy)
+        else:
+            np.save(outpath_npy, np.empty(0))
 
     def do_pred_fasta(self, inpath_fasta, outpath_npy):
         if os.stat(inpath_fasta).st_size != 0:
             predict_fasta(model=self.model, input_fasta=inpath_fasta, output=outpath_npy, token_cores=self.cores)
+        else:
+            np.save(outpath_npy, np.empty(0))
 
     def do_filter_fasta(self, inpath_fasta, preds_npy, out_fasta_pos, out_fasta_neg):
         if os.path.exists(inpath_fasta) and os.stat(inpath_fasta).st_size != 0:
@@ -112,6 +117,9 @@ class Receiver:
     def run(self, cycles, barcodes, mode="bam", discard_neg=False):
         # copy by value
         cycles_todo = cycles[:]
+        if mode != "bam" and mode != "fasta":
+            raise ValueError("Unrecognized sender format: {}".format(mode))
+
         while len(cycles_todo) > 0:
             c = cycles_todo[0]
             single = c <= self.read_length
@@ -120,9 +128,17 @@ class Receiver:
                 barcode = barcodes_todo[0]
                 inpath_bam_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_1.bam".format(c, barcode))
                 inpath_bam_2 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_2.bam".format(c, barcode))
+                inpath_fasta_1 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_1.fasta".format(c, barcode))
+                inpath_fasta_2 = os.path.join(self.input_dir, "hilive_out_cycle{}_{}_deepac_2.fasta".format(c, barcode))
 
-                if (single and os.path.exists(inpath_bam_1)) \
-                        or (os.path.exists(inpath_bam_1) and os.path.exists(inpath_bam_2)):
+                if mode == "bam":
+                    single_exists = single and os.path.exists(inpath_bam_1)
+                    pair_exists = os.path.exists(inpath_bam_1) and os.path.exists(inpath_bam_2)
+                else:
+                    single_exists = single and os.path.exists(inpath_fasta_1)
+                    pair_exists = os.path.exists(inpath_fasta_1) and os.path.exists(inpath_fasta_2)
+
+                if single_exists or pair_exists:
                     print("Received cycle {}, barcode {}.".format(c, barcode))
 
                     out_fasta_pos = os.path.join(self.output_dir,
@@ -132,30 +148,23 @@ class Receiver:
                     else:
                         out_fasta_neg = os.path.join(self.output_dir,
                                                      "hilive_out_cycle{}_{}_predicted_neg.fasta".format(c, barcode))
-                    inpath_fasta_1 = os.path.join(self.input_dir,
-                                                  "hilive_out_cycle{}_{}_deepac_1.fasta".format(c, barcode))
                     outpath_npy_1 = os.path.join(self.output_dir,
                                                  "hilive_out_cycle{}_{}_deepac_1.npy".format(c, barcode))
                     if mode == "bam":
                         self.do_pred_bam(inpath_bam_1, outpath_npy_1)
-                    elif mode == "fasta":
-                        self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
                     else:
-                        raise ValueError("Unrecognized sender format: {}".format(mode))
+                        # mode == "fasta"
+                        self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
 
                     if single:
                         self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
                     else:
-                        inpath_fasta_2 = os.path.join(self.input_dir,
-                                                      "hilive_out_cycle{}_{}_deepac_2.fasta".format(c, barcode))
                         outpath_npy_2 = os.path.join(self.output_dir,
                                                      "hilive_out_cycle{}_{}_deepac_2.npy".format(c, barcode))
                         if mode == "bam":
                             self.do_pred_bam(inpath_bam_2, outpath_npy_2)
-                        elif mode == "fasta":
-                            self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
                         else:
-                            raise ValueError("Unrecognized sender format: {}".format(mode))
+                            self.do_pred_fasta(inpath_fasta_2, outpath_npy_2)
 
                         self.do_filter_paired_fasta(inpath_fasta_1, inpath_fasta_2, outpath_npy_1, outpath_npy_2,
                                                     out_fasta_pos, out_fasta_neg)

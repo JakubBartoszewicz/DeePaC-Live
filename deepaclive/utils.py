@@ -3,6 +3,15 @@ from Bio.SeqIO.FastaIO import SimpleFastaParser
 import itertools
 
 
+def ensemble(predictions_list, outpath_npy):
+    ys = []
+    for p in predictions_list:
+        ys.append(np.load(p, mmap_mode='r'))
+    ys = np.array(ys)
+    y_pred = np.average(ys, 0)
+    np.save(outpath_npy, y_pred)
+
+
 def filter_paired_fasta(input_fasta_1, predictions_1, output_pos, input_fasta_2=None, predictions_2=None,
                         output_neg=None, threshold=0.5, print_potentials=False, precision=3):
     """Filter a reads in a fasta file by pathogenic potential."""
