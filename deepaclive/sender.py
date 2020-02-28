@@ -18,7 +18,16 @@ class Sender:
         self.cores = n_cpus
         self.c_threads = str(self.cores - 1)
         self.user_hostname = user_hostname
-        self.pkey = os.path.abspath(os.path.realpath(os.path.expanduser(key)))
+        self.pkey = key
+        if user_hostname is not None:
+            print("***WARNING: Sending data to a remote server! "
+                  "DO NOT send private data anywhere unless you know that (and why) you are allowed to.***")
+            time.sleep(3)
+            if key is None:
+                print("***WARNING: No private key selected! Your connection is not secure. DO NOT send private data.***")
+                time.sleep(5)
+            else:
+                self.pkey = os.path.abspath(os.path.realpath(os.path.expanduser(key)))
         self.port = port
         print("Sender ready.")
 
