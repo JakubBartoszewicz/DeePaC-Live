@@ -21,6 +21,8 @@ def run_sender(args):
 
 
 def run_receiver(args):
+    if args.custom:
+        args.command = None
     receiver = Receiver(args.command, model=args.model, read_length=args.read_length, input_dir=args.rec_in_dir,
                         output_dir=args.rec_out_dir, n_cpus=args.n_cpus_rec, n_gpus=args.n_gpus,
                         threshold=args.threshold)
