@@ -29,7 +29,7 @@ setup(name='deepaclive',
           'deepac>=0.10.1',
           'tensorflow==1.15',
           'pysam>=0.15.4',
-          'paramiko>=2.7.1'
+          'paramiko>=2.7.1',
           'scikit-learn>=0.22.1',
           'numpy>=1.18.1',
           'biopython>=1.76'
