@@ -5,7 +5,8 @@ from deepaclive.sftp_client import sftp_push
 
 
 class Sender:
-    def __init__(self, read_length, input_dir, output_dir, user_hostname, key=None, port=22, n_cpus=8, do_all=False):
+    def __init__(self, read_length, input_dir, output_dir, user_hostname, key=None, port=22, n_cpus=8, do_all=False,
+                 do_mapped=False):
         print("Setting up the sender...")
         self.input_dir = os.path.abspath(os.path.realpath(os.path.expanduser(input_dir)))
         self.output_dir = os.path.abspath(os.path.realpath(os.path.expanduser(output_dir)))
@@ -15,6 +16,7 @@ class Sender:
             os.mkdir(self.output_dir)
         self.read_length = read_length
         self.do_filter = not do_all
+        self.do_mapped = do_mapped
         self.cores = n_cpus
         self.c_threads = str(self.cores - 1)
         self.user_hostname = user_hostname
@@ -46,9 +48,15 @@ class Sender:
                     print("Processing cycle {}, barcode {}.".format(c, barcode))
                     outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_{}_deepac".format(c, barcode))
                     if mode == "bam":
-                        outfiles = self.get_unmapped_bam(inpath, outpath, single, do_filter=self.do_filter)
+                        if self.do_mapped:
+                            outfiles = self.get_unmapped_bam(inpath, outpath, single)
+                        else:
+                            outfiles = self.get_unmapped_bam(inpath, outpath, single, do_filter=self.do_filter)
                     elif mode == "fasta":
-                        outfiles = self.get_unmapped_fasta(inpath, outpath, single, do_filter=self.do_filter)
+                        if self.do_mapped:
+                            outfiles = self.get_unmapped_fasta(inpath, outpath, single)
+                        else:
+                            outfiles = self.get_unmapped_fasta(inpath, outpath, single, do_filter=self.do_filter)
                     else:
                         raise ValueError("Unrecognized sender format: {}".format(mode))
                     files.append(outfiles[0])
@@ -122,3 +130,40 @@ class Sender:
                     pass
                 pysam.view("-bf 128", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
             return outpath_bam_1, outpath_bam_2
+
+    def get_mapped_bam(self, inpath, outpath, single=False):
+        outpath_bam_1 = outpath + "_1.bam"
+        # create the file upfront, so pysam can open it
+        with open(outpath_bam_1, 'w') as fp:
+            pass
+        # set output in both pysam wrapper and samtools argument list
+        if single:
+            pysam.view("-bG 4", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
+
+            return outpath_bam_1, ""
+        else:
+            pysam.view("-bG 77", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
+            outpath_bam_2 = outpath + "_2.bam"
+            # create the file upfront, so pysam can open it
+            with open(outpath_bam_2, 'w') as fp:
+                pass
+            pysam.view("-bG 141", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
+            return outpath_bam_1, outpath_bam_2
+
+    def get_mapped_fasta(self, inpath, outpath, single=False):
+        # set output in both pysam wrapper and samtools argument list
+        outpath_fasta_1 = outpath + "_1.fasta"
+        # create the file upfront, so pysam can open it
+        with open(outpath_fasta_1, 'w') as fp:
+            pass
+        if single:
+            pysam.fasta("-G 4", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
+            return outpath_fasta_1, ""
+        else:
+            pysam.fasta("-NG 77", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
+            outpath_fasta_2 = outpath + "_2.fasta"
+            # create the file upfront, so pysam can open it
+            with open(outpath_fasta_2, 'w') as fp:
+                pass
+            pysam.fasta("-NG 141", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_2)
+            return outpath_fasta_1, outpath_fasta_2

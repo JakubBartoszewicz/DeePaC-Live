@@ -14,7 +14,7 @@ def main():
 def run_sender(args):
     sender = Sender(read_length=args.read_length, input_dir=args.in_dir, output_dir=args.send_out_dir,
                     user_hostname=args.remote, key=args.key, port=args.port,
-                    n_cpus=args.n_cpus_send, do_all=args.all)
+                    n_cpus=args.n_cpus_send, do_all=args.all, do_mapped=args.mapped)
     barcodes = args.barcodes.split(',')
     cycles = [int(c) for c in args.cycle_list.split(',')]
     sender.run(cycles=cycles, barcodes=barcodes, mode=args.format)
@@ -63,7 +63,7 @@ def add_base_parser(bparser):
 
 
 def add_receiver_parser(rparser):
-    command_group = rparser.add_mutually_exclusive_group()
+    command_group = rparser.add_mutually_exclusive_group(required=True)
     command_group.add_argument('-c', '--command', default='deepac', help='DeePaC command to use '
                                                                          '(switches builtin models).')
     command_group.add_argument('-C', '--custom', action='store_true', help='Use a custom model.')
@@ -89,7 +89,10 @@ def add_sender_parser(sparser):
     sparser.add_argument('-o', '--sender-output', dest='send_out_dir', required=True, help='Sender output directory.')
     sparser.add_argument('-n', '--n-cpus-send', dest='n_cpus_send', type=int, default=8,
                          help='Number of cores used by the sender.')
-    sparser.add_argument('-a', '--all', action='store_true', help="Analyze all reads (default: unmapped only).")
+    mapped_group = sparser.add_mutually_exclusive_group()
+    mapped_group.add_argument('-A', '--all', action='store_true', help="Analyze all reads (default: unmapped only).")
+    mapped_group.add_argument('-M', '--mapped', action='store_true', help="Analyze only MAPPED reads "
+                                                                          "(default: unmapped only).")
     sparser.add_argument('-r', '--remote', help='Remote host and path (with username).')
     sparser.add_argument('-k', '--key', help='SSH key.')
     sparser.add_argument('-p', '--port', default=22, help='Port for SFTP connection.')
