@@ -34,7 +34,8 @@ def run_receiver(args):
 def run_refilter(args):
     preds_input_dirs = args.preds_in_dir.split(',')
     refilterer = Refilterer(read_length=args.read_length, input_fasta_dir=args.fasta_in_dir,
-                            input_npy_dirs=preds_input_dirs, output_dir=args.ref_out_dir)
+                            input_npy_dirs=preds_input_dirs, output_dir=args.ref_out_dir,
+                            threshold=args.threshold)
     cycles = [int(c) for c in args.cycle_list.split(',')]
     barcodes = args.barcodes.split(',')
     refilterer.run(cycles=cycles, barcodes=barcodes, discard_neg=args.discard_neg)
