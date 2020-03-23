@@ -49,12 +49,12 @@ class Sender:
                     outpath = os.path.join(self.output_dir, "hilive_out_cycle{}_{}_deepac".format(c, barcode))
                     if mode == "bam":
                         if self.do_mapped:
-                            outfiles = self.get_unmapped_bam(inpath, outpath, single)
+                            outfiles = self.get_mapped_bam(inpath, outpath, single)
                         else:
                             outfiles = self.get_unmapped_bam(inpath, outpath, single, do_filter=self.do_filter)
                     elif mode == "fasta":
                         if self.do_mapped:
-                            outfiles = self.get_unmapped_fasta(inpath, outpath, single)
+                            outfiles = self.get_mapped_fasta(inpath, outpath, single)
                         else:
                             outfiles = self.get_unmapped_fasta(inpath, outpath, single, do_filter=self.do_filter)
                     else:
@@ -142,12 +142,12 @@ class Sender:
 
             return outpath_bam_1, ""
         else:
-            pysam.view("-bG 77", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
+            pysam.view("-bG 12 -f 65", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
             outpath_bam_2 = outpath + "_2.bam"
             # create the file upfront, so pysam can open it
             with open(outpath_bam_2, 'w') as fp:
                 pass
-            pysam.view("-bG 141", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
+            pysam.view("-bG 12 -f 129", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
             return outpath_bam_1, outpath_bam_2
 
     def get_mapped_fasta(self, inpath, outpath, single=False):
@@ -160,10 +160,10 @@ class Sender:
             pysam.fasta("-G 4", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
             return outpath_fasta_1, ""
         else:
-            pysam.fasta("-NG 77", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
+            pysam.fasta("-NG 12 -f 65", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
             outpath_fasta_2 = outpath + "_2.fasta"
             # create the file upfront, so pysam can open it
             with open(outpath_fasta_2, 'w') as fp:
                 pass
-            pysam.fasta("-NG 141", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_2)
+            pysam.fasta("-NG 12 -f 129", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_2)
             return outpath_fasta_1, outpath_fasta_2
