@@ -142,12 +142,12 @@ class Sender:
 
             return outpath_bam_1, ""
         else:
-            pysam.view("-bG 12 -f 65", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
+            pysam.view("-bG 12", "-f 64", "-@", self.c_threads, "-o", outpath_bam_1, inpath, save_stdout=outpath_bam_1)
             outpath_bam_2 = outpath + "_2.bam"
             # create the file upfront, so pysam can open it
             with open(outpath_bam_2, 'w') as fp:
                 pass
-            pysam.view("-bG 12 -f 129", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
+            pysam.view("-bG 12", "-f 128", "-@", self.c_threads, "-o", outpath_bam_2, inpath, save_stdout=outpath_bam_2)
             return outpath_bam_1, outpath_bam_2
 
     def get_mapped_fasta(self, inpath, outpath, single=False):
