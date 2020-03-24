@@ -160,10 +160,10 @@ class Sender:
             pysam.fasta("-G 4", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
             return outpath_fasta_1, ""
         else:
-            pysam.fasta("-NG 12 -f 65", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
+            pysam.fasta("-NG 12", "-f 64", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_1)
             outpath_fasta_2 = outpath + "_2.fasta"
             # create the file upfront, so pysam can open it
             with open(outpath_fasta_2, 'w') as fp:
                 pass
-            pysam.fasta("-NG 12 -f 129", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_2)
+            pysam.fasta("-NG 12", "-f 128", "-@", self.c_threads, inpath, save_stdout=outpath_fasta_2)
             return outpath_fasta_1, outpath_fasta_2
