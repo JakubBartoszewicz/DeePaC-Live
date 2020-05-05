@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='deepaclive',
-      version='0.1.0',
+      version='0.2.0',
       description='Detecting novel pathogens from NGS reads in real-time during a sequencing run.',
       long_description=readme(),
       long_description_content_type='text/markdown',
