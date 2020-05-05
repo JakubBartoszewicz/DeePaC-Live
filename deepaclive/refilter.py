@@ -1,5 +1,5 @@
 import os
-from deepaclive.utils import filter_paired_fasta, ensemble
+from deepac.predict import filter_paired_fasta, ensemble
 import time
 
 

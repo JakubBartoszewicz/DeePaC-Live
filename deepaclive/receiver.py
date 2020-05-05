@@ -1,10 +1,9 @@
 import os
 import fnmatch
 import importlib
-from deepac.predict import predict_fasta
+from deepac.predict import predict_fasta, filter_paired_fasta
 from deepac.builtin_loading import BuiltinLoader
-from deepaclive.utils import filter_paired_fasta
-from tensorflow.compat.v1.keras.models import load_model
+from tensorflow.keras.models import load_model
 import time
 import pysam
 import numpy as np
