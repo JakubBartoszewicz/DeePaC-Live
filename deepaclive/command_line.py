@@ -4,7 +4,9 @@ from deepaclive.sender import Sender
 from deepaclive.refilter import Refilterer
 import argparse
 from deepaclive import __version__
-from multiprocessing import Process
+from multiprocessing import Process, cpu_count
+from deepac.command_line import add_global_parser, global_setup
+from deepac.utils import config_cpus, config_gpus
 
 
 def main():
@@ -21,11 +23,14 @@ def run_sender(args):
 
 
 def run_receiver(args):
+    tpu_resolver = global_setup(args)
+    config_cpus(args.n_cpus_rec)
+    config_gpus(args.gpus)
     if args.custom:
         args.command = None
     receiver = Receiver(args.command, model=args.model, read_length=args.read_length, input_dir=args.rec_in_dir,
-                        output_dir=args.rec_out_dir, n_cpus=args.n_cpus_rec, n_gpus=args.n_gpus,
-                        threshold=args.threshold)
+                        output_dir=args.rec_out_dir, n_cpus=args.n_cpus_rec, threshold=args.threshold,
+                        tpu_resolver=tpu_resolver)
     cycles = [int(c) for c in args.cycle_list.split(',')]
     barcodes = args.barcodes.split(',')
     receiver.run(cycles=cycles, barcodes=barcodes, mode=args.format, discard_neg=args.discard_neg)
@@ -75,10 +80,10 @@ def add_receiver_parser(rparser):
     rparser.add_argument('-I', '--receiver-input', dest='rec_in_dir', required=True, help="Receiver input directory.")
     rparser.add_argument('-O', '--receiver-output', dest='rec_out_dir', required=True,
                          help="Receiver output directory.")
-    rparser.add_argument('-N', '--n-cpus-rec', dest='n_cpus_rec', type=int, default=8,
-                         help='Number of cores used by the receiver.')
-    rparser.add_argument('-g', '--n-gpus', dest='n_gpus', type=int, default=0,
-                         help='Number of GPUs used by the receiver.')
+    rparser.add_argument('-N', '--n-cpus-rec', dest='n_cpus_rec', type=int,
+                         help='Number of cores used by the receiver. Default: all')
+    rparser.add_argument('-g', '--gpus', dest="gpus", nargs='+', type=int,
+                         help="GPU devices to use (comma-separated). Default: all")
     rparser.add_argument('-d', '--discard-neg', dest='discard_neg', action='store_true',
                          help="Don't save predictions for nonpathogenic reads.")
 
@@ -88,8 +93,8 @@ def add_receiver_parser(rparser):
 def add_sender_parser(sparser):
     sparser.add_argument('-i', '--sender-input', dest='in_dir', required=True, help='Sender input directory.')
     sparser.add_argument('-o', '--sender-output', dest='send_out_dir', required=True, help='Sender output directory.')
-    sparser.add_argument('-n', '--n-cpus-send', dest='n_cpus_send', type=int, default=8,
-                         help='Number of cores used by the sender.')
+    sparser.add_argument('-n', '--n-cpus-send', dest='n_cpus_send', type=int,
+                         help='Number of cores used by the sender. Default: all.')
     mapped_group = sparser.add_mutually_exclusive_group()
     mapped_group.add_argument('-A', '--all', action='store_true', help="Analyze all reads (default: unmapped only).")
     mapped_group.add_argument('-M', '--mapped', action='store_true', help="Analyze only MAPPED reads "
@@ -116,7 +121,7 @@ def add_refilter_parser(rparser):
 def parse():
     """Parse DeePaC-live CLI arguments."""
     parser = argparse.ArgumentParser(prog='deepac-live', description="Running DeePaC in real time.")
-    parser.add_argument('-v', '--version', dest='version', action='store_true', help='Print version.')
+    parser = add_global_parser(parser)
 
     subparsers = parser.add_subparsers(help='DeePaC-live subcommands. See command --help for details.',
                                        dest='subparser')

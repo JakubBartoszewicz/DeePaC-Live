@@ -2,10 +2,11 @@ import pysam
 import os
 import time
 from deepaclive.sftp_client import sftp_push
+from multiprocessing import cpu_count
 
 
 class Sender:
-    def __init__(self, read_length, input_dir, output_dir, user_hostname, key=None, port=22, n_cpus=8, do_all=False,
+    def __init__(self, read_length, input_dir, output_dir, user_hostname, key=None, port=22, n_cpus=None, do_all=False,
                  do_mapped=False):
         print("Setting up the sender...")
         self.input_dir = os.path.abspath(os.path.realpath(os.path.expanduser(input_dir)))
@@ -17,7 +18,7 @@ class Sender:
         self.read_length = read_length
         self.do_filter = not do_all
         self.do_mapped = do_mapped
-        self.cores = n_cpus
+        self.cores = n_cpus if n_cpus is not None else cpu_count()
         self.c_threads = str(self.cores - 1)
         self.user_hostname = user_hostname
         self.pkey = key

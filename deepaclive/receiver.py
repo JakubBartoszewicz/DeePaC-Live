@@ -3,10 +3,12 @@ import fnmatch
 import importlib
 from deepac.predict import predict_fasta, filter_paired_fasta
 from deepac.builtin_loading import BuiltinLoader
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 import time
 import pysam
 import numpy as np
+from multiprocessing import cpu_count
 
 
 def get_builtin(deepac_command):
@@ -51,7 +53,8 @@ def get_builtin(deepac_command):
 
 
 class Receiver:
-    def __init__(self, deepac_command, model, read_length, input_dir, output_dir, n_cpus=8, n_gpus=0, threshold=0.5):
+    def __init__(self, deepac_command, model, read_length, input_dir, output_dir, n_cpus=None, threshold=0.5,
+                 tpu_resolver=None):
         print("Setting up the receiver...")
 
         self.input_dir = os.path.abspath(os.path.realpath(os.path.expanduser(input_dir)))
@@ -68,18 +71,23 @@ class Receiver:
             self.bloader = BuiltinLoader(self.builtin_configs, self.builtin_weights)
 
             if model == "rapid":
-                self.model = self.bloader.load_rapid_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
+                self.model = self.bloader.load_rapid_model(training_mode=False, tpu_resolver=tpu_resolver)
             elif model == "sensitive":
-                self.model = self.bloader.load_sensitive_model(n_cpus=n_cpus, n_gpus=n_gpus, training_mode=False)
+                self.model = self.bloader.load_sensitive_model( training_mode=False, tpu_resolver=tpu_resolver)
             else:
                 raise ValueError("Unrecognized model type: {}".format(model))
         else:
             # load custom model
-            self.model = load_model(model)
+            if tpu_resolver is not None:
+                tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu_resolver)
+                with tpu_strategy.scope():
+                    self.model = load_model(model)
+            else:
+                self.model = load_model(model)
 
         self.threshold = threshold
         self.read_length = read_length
-        self.cores = n_cpus
+        self.cores = n_cpus if n_cpus is not None else cpu_count()
 
         print("Receiver ready.")
 
