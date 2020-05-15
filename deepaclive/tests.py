@@ -60,43 +60,45 @@ def generate_sample_bams(n, filename_prefix, cycles, barcodes, barcode_len=8,
 
 
 def run_tests(command="deepac", model="rapid", n_cpus=None, keep=False, scale=1, tpu_resolver=None):
-    if not keep and os.path.exists("deepac-tests"):
+    if not keep and os.path.exists("deepac-live-tests"):
         print("Deleting previous test output...")
-        for root, dirs, files in os.walk("deepac-tests", topdown=False):
+        for root, dirs, files in os.walk("deepac-live-tests", topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
-    if not os.path.exists("deepac-tests"):
-        os.makedirs("deepac-tests")
-    if not os.path.exists(os.path.join("deepac-tests", "mock_out")):
-        os.makedirs(os.path.join("deepac-tests", "mock_out"))
+    if not os.path.exists("deepac-live-tests"):
+        os.makedirs("deepac-live-tests")
+    if not os.path.exists(os.path.join("deepac-live-tests", "mock_out")):
+        os.makedirs(os.path.join("deepac-live-tests", "mock_out"))
     cycles = [50, 100, 150, 200, 250, 308, 358, 408, 458, 508]
     barcodes = ["undetermined"]
     if not keep:
         print("TEST: Generating data...")
-        generate_sample_bams(1024*scale, os.path.join("deepac-tests", "mock_out", "hilive_out_cycle"), barcode_len=8,
+        generate_sample_bams(1024*scale, os.path.join("deepac-live-tests", "mock_out", "hilive_out_cycle"), barcode_len=8,
                              cycles=cycles, barcodes=barcodes)
 
-    receiver = Receiver(command, model=model, read_length=250, input_dir=os.path.join("deepac-tests", "rec_in"),
-                        output_dir=os.path.join("deepac-tests", "rec_out"), n_cpus=n_cpus, threshold=0.5,
+    receiver = Receiver(command, model=model, read_length=250, input_dir=os.path.join("deepac-live-tests", "rec_in"),
+                        output_dir=os.path.join("deepac-live-tests", "rec_out"), n_cpus=n_cpus, threshold=0.5,
                         tpu_resolver=tpu_resolver)
-    sender = Sender(read_length=250, input_dir=os.path.join("deepac-tests", "mock_out"),
-                    output_dir=os.path.join("deepac-tests", "rec_in"), n_cpus=n_cpus)
+    sender = Sender(read_length=250, input_dir=os.path.join("deepac-live-tests", "mock_out"),
+                    output_dir=os.path.join("deepac-live-tests", "rec_in"), n_cpus=n_cpus)
 
     print("TEST: Filtering and sending data...")
     sender.run(cycles=cycles, barcodes=barcodes)
-    assert (os.path.isfile(os.path.join("deepac-tests", "rec_in", "hilive_out_cycle50_undetermined_deepac_1.bam"))), \
+    assert (os.path.isfile(os.path.join("deepac-live-tests", "rec_in",
+                                        "hilive_out_cycle50_undetermined_deepac_1.bam"))), \
         "Filtering or sending failed."
-    assert (os.path.isfile(os.path.join("deepac-tests", "rec_in", "hilive_out_cycle508_undetermined_deepac_2.bam"))), \
+    assert (os.path.isfile(os.path.join("deepac-live-tests", "rec_in",
+                                        "hilive_out_cycle508_undetermined_deepac_2.bam"))), \
         "Filtering or sending failed."
 
     print("TEST: Receiving data and running predictions...")
     receiver.run(cycles=cycles, barcodes=barcodes)
-    assert (os.path.isfile(os.path.join("deepac-tests", "rec_out",
+    assert (os.path.isfile(os.path.join("deepac-live-tests", "rec_out",
                                         "hilive_out_cycle250_undetermined_predicted_pos.fasta"))), \
         "Receiving or prediction failed."
-    assert (os.path.isfile(os.path.join("deepac-tests", "rec_out",
+    assert (os.path.isfile(os.path.join("deepac-live-tests", "rec_out",
                                         "hilive_out_cycle508_undetermined_predicted_neg.fasta"))), \
         "Receiving or prediction failed."
 
