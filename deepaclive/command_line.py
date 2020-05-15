@@ -2,15 +2,30 @@ import sklearn # to load libgomp early to solve problems with static TLS on some
 from deepaclive.receiver import Receiver
 from deepaclive.sender import Sender
 from deepaclive.refilter import Refilterer
+from deepaclive.tests import run_tests
 import argparse
 from deepaclive import __version__
-from multiprocessing import Process, cpu_count
+from multiprocessing import Process
 from deepac.command_line import add_global_parser, global_setup
 from deepac.utils import config_cpus, config_gpus
+import numpy as np
+import random as rn
 
 
 def main():
+    seed = 0
+    np.random.seed(seed)
+    rn.seed(seed)
     parse()
+
+
+def run_tester(args):
+    tpu_resolver = global_setup(args)
+    n_cpus = config_cpus(args.n_cpus_rec)
+    config_gpus(args.gpus)
+    if args.custom:
+        args.command = None
+    run_tests(args.command, args.model, n_cpus, args.keep, args.scale, tpu_resolver)
 
 
 def run_sender(args):
@@ -24,12 +39,12 @@ def run_sender(args):
 
 def run_receiver(args):
     tpu_resolver = global_setup(args)
-    config_cpus(args.n_cpus_rec)
+    n_cpus = config_cpus(args.n_cpus_rec)
     config_gpus(args.gpus)
     if args.custom:
         args.command = None
     receiver = Receiver(args.command, model=args.model, read_length=args.read_length, input_dir=args.rec_in_dir,
-                        output_dir=args.rec_out_dir, n_cpus=args.n_cpus_rec, threshold=args.threshold,
+                        output_dir=args.rec_out_dir, n_cpus=n_cpus, threshold=args.threshold,
                         tpu_resolver=tpu_resolver)
     cycles = [int(c) for c in args.cycle_list.split(',')]
     barcodes = args.barcodes.split(',')
@@ -69,25 +84,30 @@ def add_base_parser(bparser):
 
 
 def add_receiver_parser(rparser):
-    command_group = rparser.add_mutually_exclusive_group(required=True)
+    tparser = add_tester_parser(rparser)
+    tparser.add_argument('-t', '--threshold', dest='threshold', type=float, default=0.5,
+                         help='Classification threshold.')
+    tparser.add_argument('-I', '--receiver-input', dest='rec_in_dir', required=True, help="Receiver input directory.")
+    tparser.add_argument('-O', '--receiver-output', dest='rec_out_dir', required=True,
+                         help="Receiver output directory.")
+    tparser.add_argument('-d', '--discard-neg', dest='discard_neg', action='store_true',
+                         help="Don't save predictions for nonpathogenic reads.")
+
+    return tparser
+
+
+def add_tester_parser(tparser):
+    command_group = tparser.add_mutually_exclusive_group(required=True)
     command_group.add_argument('-c', '--command', default='deepac', help='DeePaC command to use '
                                                                          '(switches builtin models).')
     command_group.add_argument('-C', '--custom', action='store_true', help='Use a custom model.')
-    rparser.add_argument('-m', '--model', default='rapid',  help='Model to use. "rapid", "sensitive" '
+    tparser.add_argument('-m', '--model', default='rapid',  help='Model to use. "rapid", "sensitive" '
                                                                  'or custom .h5 file.')
-    rparser.add_argument('-t', '--threshold', dest='threshold', type=float, default=0.5,
-                         help='Classification threshold.')
-    rparser.add_argument('-I', '--receiver-input', dest='rec_in_dir', required=True, help="Receiver input directory.")
-    rparser.add_argument('-O', '--receiver-output', dest='rec_out_dir', required=True,
-                         help="Receiver output directory.")
-    rparser.add_argument('-N', '--n-cpus-rec', dest='n_cpus_rec', type=int,
+    tparser.add_argument('-N', '--n-cpus-rec', dest='n_cpus_rec', type=int,
                          help='Number of cores used by the receiver. Default: all')
-    rparser.add_argument('-g', '--gpus', dest="gpus", nargs='+', type=int,
+    tparser.add_argument('-g', '--gpus', dest="gpus", nargs='+', type=int,
                          help="GPU devices to use (comma-separated). Default: all")
-    rparser.add_argument('-d', '--discard-neg', dest='discard_neg', action='store_true',
-                         help="Don't save predictions for nonpathogenic reads.")
-
-    return rparser
+    return tparser
 
 
 def add_sender_parser(sparser):
@@ -145,6 +165,14 @@ def parse():
     parser_local = add_receiver_parser(parser_local)
     parser_local = add_sender_parser(parser_local)
     parser_local.set_defaults(func=run_local)
+
+    parser_test = subparsers.add_parser('test', help='Test locally.')
+    parser_test = add_tester_parser(parser_test)
+    parser_test.add_argument('-k', '--keep', help="Don't delete previous test output.",
+                             default=False, action="store_true")
+    parser_test.add_argument('-s', '--scale', help="Generate s*1024 reads for testing (Default: s=1).",
+                             default=1, type=int)
+    parser_test.set_defaults(func=run_tester)
 
     args = parser.parse_args()
 

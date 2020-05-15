@@ -6,8 +6,8 @@ from multiprocessing import cpu_count
 
 
 class Sender:
-    def __init__(self, read_length, input_dir, output_dir, user_hostname, key=None, port=22, n_cpus=None, do_all=False,
-                 do_mapped=False):
+    def __init__(self, read_length, input_dir, output_dir, user_hostname=None, key=None, port=22, n_cpus=None,
+                 do_all=False, do_mapped=False):
         print("Setting up the sender...")
         self.input_dir = os.path.abspath(os.path.realpath(os.path.expanduser(input_dir)))
         self.output_dir = os.path.abspath(os.path.realpath(os.path.expanduser(output_dir)))
