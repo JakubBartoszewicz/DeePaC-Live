@@ -24,6 +24,8 @@ def run_tester(args):
     if args.tpu is None:
         n_cpus = config_cpus(args.n_cpus_rec)
         config_gpus(args.gpus)
+    else:
+        n_cpus = args.n_cpus_rec
     if args.custom:
         args.command = None
     run_tests(args.command, args.model, n_cpus, args.keep, args.scale, tpu_resolver)
@@ -43,6 +45,8 @@ def run_receiver(args):
     if args.tpu is None:
         n_cpus = config_cpus(args.n_cpus_rec)
         config_gpus(args.gpus)
+    else:
+        n_cpus = args.n_cpus_rec
     if args.custom:
         args.command = None
     receiver = Receiver(args.command, model=args.model, read_length=args.read_length, input_dir=args.rec_in_dir,
