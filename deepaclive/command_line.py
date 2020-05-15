@@ -97,7 +97,7 @@ def add_receiver_parser(rparser):
 
 
 def add_tester_parser(tparser):
-    command_group = tparser.add_mutually_exclusive_group(required=True)
+    command_group = tparser.add_mutually_exclusive_group()
     command_group.add_argument('-c', '--command', default='deepac', help='DeePaC command to use '
                                                                          '(switches builtin models).')
     command_group.add_argument('-C', '--custom', action='store_true', help='Use a custom model.')
