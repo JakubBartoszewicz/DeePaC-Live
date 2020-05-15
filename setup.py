@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='deepaclive',
-      version='0.2.0',
+      version='0.3.0',
       description='Detecting novel pathogens from NGS reads in real-time during a sequencing run.',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -27,7 +27,7 @@ setup(name='deepaclive',
       packages=['deepaclive'],
       python_requires='>=3',
       install_requires=[
-          'deepac>=0.11.0',
+          'deepac>=0.12.0',
           'tensorflow>=2.1',
           'pysam>=0.15.4',
           'paramiko>=2.7.1',
