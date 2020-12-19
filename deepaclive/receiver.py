@@ -124,7 +124,6 @@ class Receiver:
     def run(self, cycles, barcodes, mode="bam", discard_neg=False):
         # copy by value
         cycles_todo = cycles[:]
-        first_cycle_second_mate = [d for d in cycles if d > self.read_length][0]
         if mode != "bam" and mode != "fasta":
             raise ValueError("Unrecognized sender format: {}".format(mode))
 
@@ -156,26 +155,13 @@ class Receiver:
                     else:
                         out_fasta_neg = os.path.join(self.output_dir,
                                                      "hilive_out_cycle{}_{}_predicted_neg.fasta".format(c, barcode))
-
-                    # if first mate, or first cycle of the second mate
-                    # This is caused by HiLive2's problem with barcoding.
-                    # Barcodes are available only after the start of the second mate.
-                    if single or c == first_cycle_second_mate:
-                        outpath_npy_1 = os.path.join(self.output_dir,
-                                                     "hilive_out_cycle{}_{}_deepac_1.npy".format(c, barcode))
+                    outpath_npy_1 = os.path.join(self.output_dir,
+                                                 "hilive_out_cycle{}_{}_deepac_1.npy".format(c, barcode))
+                    if mode == "bam":
+                        self.do_pred_bam(inpath_bam_1, outpath_npy_1)
                     else:
-                        outpath_npy_1 = os.path.join(self.output_dir,
-                                                     "hilive_out_cycle{}_{}_deepac_1.npy".format(
-                                                         first_cycle_second_mate, barcode))
-                        inpath_fasta_1 = os.path.join(self.input_dir,
-                                                      "hilive_out_cycle{}_{}_deepac_1.fasta".format(
-                                                          first_cycle_second_mate, barcode))
-                    if not os.path.isfile(outpath_npy_1):
-                        if mode == "bam":
-                            self.do_pred_bam(inpath_bam_1, outpath_npy_1)
-                        else:
-                            # mode == "fasta"
-                            self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
+                        # mode == "fasta"
+                        self.do_pred_fasta(inpath_fasta_1, outpath_npy_1)
 
                     if single:
                         self.do_filter_fasta(inpath_fasta_1, outpath_npy_1, out_fasta_pos, out_fasta_neg)
