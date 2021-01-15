@@ -3,14 +3,13 @@ import os
 from deepaclive.receiver import Receiver
 from deepaclive.sender import Sender
 import pysam
-from multiprocessing import Process
 
 
 def generate_sample_sams(n, filename_prefix, cycles, barcodes, barcode_len=8,
                          gc_pos=0.7, gc_neg=0.3, length=250):
     """Generate random reads to a fasta file."""
 
-    header = "@SQ SN:ref  LN:1024\n"
+    header = "@HD\tVN:1.6\tSO:unknown\n@SQ\tSN:ref\tLN:1024\n"
     flag_unpaired = 4
     flags_paired = [77, 141]
     n_half = n//2
