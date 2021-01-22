@@ -4,7 +4,7 @@ A DeePaC plugin for real-time analysis of Illumina sequencing runs. Captures HiL
  
 We recommend having a look at:
 
-* DeePaC main repo: https://gitlab.com/rki_bioinformatics/DeePaC
+* DeePaC main repo: https://gitlab.com/dacs-hpi/deepac
     * tutorial
     * trained built-in models
     * datasets used for both original and deepac-live models
@@ -20,6 +20,8 @@ We recommend having a look at:
 conda install tensorflow-gpu
 # Install deepac-live
 conda install -c bioconda deepac-live
+# Recommended: download and compile deepac-live custom models
+deepac getmodels --fetch
 # Optional: viral built-in models
 conda install -c bioconda deepacvir
 ```
@@ -29,6 +31,8 @@ Alternatively, you can also use pip:
 pip install tensorflow-gpu
 # Install deepac-live
 pip install deepac-live
+# Recommended: download and compile deepac-live custom models
+deepac getmodels --fetch
 # Optional: viral built-in models
 pip install deepacvir
 ```
