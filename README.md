@@ -33,17 +33,33 @@ pip install tensorflow-gpu
 pip install deepac-live
 # Recommended: download and compile deepac-live custom models
 deepac getmodels --fetch
-# Optional: viral built-in models
+
+# Optional: viral built-in models (not necessary)
 pip install deepacvir
 ```
+
+## DeePaC-Live models
+DeePaC-Live ships new, updated models for bacterial pathogenic potential and viral infectious potential prediction.
+The Illumina models are trained on 25-250bp subreads to ensure high performance over the whole sequencing run. 
+The Nanopore models are trained on 250bp subreads corresponding to just around 0.5s of sequencing.
+To fetch the models, use `deepac getmodels --fetch`. In the created directory, you will find the following models ready for inference:
+
+* illu-bac-res18.h5 : an Illumina bacterial model
+* illu-vir-res18.h5 : an Illumina viral model
+* nano-bac-res18.h5 : a Nanopore bacterial model
+* illu-vir-res18.h5 : a Nanopore viral model
+
 ## Basic usage
 ```
-# Run locally: build-in model for bacteria
-deepac-live local -c deepac -m rapid -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
-# Run locally: build-in model for viruses
-deepac-live local -c deepacvir -m rapid -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
+# Run locally: deepac-live Illumina models
+deepac-live local -C -m illu-bac-res18.h5 -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
 # Run locally: custom model
 deepac-live local -C -m custom_model.h5 -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
+
+# Run locally: build-in model for bacteria (not recommended)
+deepac-live local -c deepac -m rapid -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
+# Run locally: build-in model for viruses (not recommended)
+deepac-live local -c deepacvir -m rapid -s 25,50,75,100,133,158,183,208 -l 100 -i hilive-out -o temp -I temp -O output -B ACAG-TCGA,undetermined
 ```
 
 ## Advanced usage
