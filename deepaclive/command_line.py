@@ -1,4 +1,5 @@
-import sklearn # to load libgomp early to solve problems with static TLS on some systems like bioconda mulled-tests
+import sklearn # to load libgomp early to solve problems with static TLS on some systems like bioconda mulled tests
+import matplotlib.pyplot as plt # also to solve import ordering problems in bioconda mulled tests
 from deepaclive.receiver import Receiver
 from deepaclive.sender import Sender
 from deepaclive.refilter import Refilterer
