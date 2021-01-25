@@ -28,7 +28,7 @@ To fetch the models, install DeePaC or DeePaC-Live and use `deepac getmodels --f
 ## Installation
 
 We recommend using Bioconda (based on the `conda` package manager) or custom Docker images based on official Tensorflow images.
-Alternatively, a `pip` installation is possible as well. For installation on IBM Power Systems (e.g. AC992), see separate [installation instructions (experimental)](https://gitlab.com/rki_bioinformatics/DeePaC/-/blob/master/dockerfiles/ppc64le/README.md).
+Alternatively, a `pip` installation is possible as well. 
 
 ### With Bioconda (recommended)
  [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/deepaclive/README.html)
@@ -52,9 +52,9 @@ conda activate my_env
 and then:
 ```
 # For GPU support (recommended)
-conda install tensorflow-gpu deepac
+conda install tensorflow-gpu deepaclive
 # Basic installation (CPU-only)
-conda install deepac
+conda install deepaclive
 ```
 
 Highly recommended: download and compile the latest deepac-live custom models:
@@ -100,7 +100,7 @@ docker run -v $(pwd):/deepac -u $(id -u):$(id -g) --rm --gpus all dacshpi/deepac
 docker run -it -v $(pwd):/deepac -u $(id -u):$(id -g) --rm --gpus all dacshpi/deepaclive:0.3.2-gpu bash
 ```
 
-The image ships the main `deepac` package along with the `deepac-vir` and `deepac-strain` plugins. See the basic usage guide below for more deepac commands.
+The image ships `deepaclive` and the main `deepac` package along the `deepac-vir` and `deepac-strain` plugins. See the basic usage guide below for more deepaclive commands.
 
 Optional: download and compile the latest deepac-live custom models:
 ```
