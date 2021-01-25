@@ -6,8 +6,7 @@ We recommend having a look at:
 
 * DeePaC main repo: https://gitlab.com/dacs-hpi/deepac
     * tutorial
-    * trained built-in models
-    * datasets used for both original and deepac-live models
+    * original bacterial and viral datasets
     * code and documentation
 
 * HiLive2 repo: https://gitlab.com/rki_bioinformatics/HiLive2.
@@ -170,6 +169,10 @@ deepac-live refilter -s 25,50,75,100,133,158,183,208 -l 100 -i rem-temp -I outpu
 # Use another threshold
 deepac-live refilter -s 25,50,75,100,133,158,183,208 -l 100 -i rem-temp -I output_1 -O final_output -t 0.75 -B ACAG-TCGA,undetermined
 ```
+## Supplementary data and scripts
+Datasets are available here: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4456857.svg)](https://doi.org/10.5281/zenodo.4456857).
+You can find the scripts and data files used in the paper for dataset preprocessing and benchmarking [here]( 
+https://gitlab.com/dacs-hpi/deepac/-/tree/master/supplement_paper/subreads).
 
 ## Known issues
 See https://gitlab.com/dacs-hpi/deepac.
