@@ -1,4 +1,4 @@
-FROM dacshpi/deepac:0.13.5
+FROM dacshpi/deepac:0.13.6
 
 COPY requirements.txt .
 

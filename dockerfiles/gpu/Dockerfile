@@ -1,4 +1,4 @@
-FROM dacshpi/deepac:0.13.5-gpu
+FROM dacshpi/deepac:0.13.6-gpu
 
 COPY requirements.txt .
 
